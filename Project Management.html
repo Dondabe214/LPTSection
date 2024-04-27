@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+  background-color: #f2f2f2; /* Light gray background */
+  color: black; /* Black text color */
+}
+
+h1 {
+  text-align: center; /* Center align the header */
+  color: orange; /* Orange header color */
+}
+
+form {
+  background-color: #ddd; /* Light gray form background */
+  padding: 20px; /* Add some padding */
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  border: 1px solid black;
+}
+
+th, td {
+  border: 1px solid black;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+.project-overview {
+  background-color: #ddd; /* Light gray background */
+  color: black; /* Black text color */
+}
+
+.project-overview th, .project-overview td {
+  border: 1px solid black;
+  padding: 8px;
+  text-align: left;
+}
+
+.project-overview th {
+  background-color: #000;
+  color: #a5d6a7; /* Apple green */
+}
+
+.status-not-started {
+  color: purple; /* Purple color */
+  font-size: 20px; /* Larger font size */
+}
+
+.status-ongoing {
+  color: darkgreen; /* Dark green color */
+  font-size: 20px; /* Larger font size */
+}
+</style>
+</head>
+<body>
+
+<h1>PROJECT FIELD</h1> <!-- Big header as main title -->
+
+<form id="projectForm">
+  <label for="project">Project:</label>
+  <select id="project" name="project">
+    <option value="LIDL">LIDL</option>
+    <option value="Amazon">Amazon</option>
+    <option value="KF">KF</option>
+    <option value="ALDI">ALDI</option>
+  </select><br><br>
+
+  <label for="ianEanProject">IAN/EAN/Project name:</label>
+  <input type="text" id="ianEanProject" name="ianEanProject"><br><br>
+
+  <label for="manualType">Manual Type:</label>
+  <select id="manualType" name="manualType">
+    <option value="Full IM">Full IM</option>
+    <option value="Short IM">Short IM</option>
+    <option value="Full and Short">Full and Short</option>
+    <option value="RL">RL</option>
+    <option value="Label">Label</option>
+    <option value="Warranty">Warranty</option>
+  </select><br><br>
+
+  <label for="taskType">Task Type:</label>
+  <select id="taskType" name="taskType">
+    <option value="Initial">Initial</option>
+    <option value="Internal">Internal</option>
+    <option value="External">External</option>
+  </select><br><br>
+
+  <label for="qc">QC:</label>
+  <input type="text" id="qc" name="qc"><br><br>
+
+  <label for="typesetter">Typesetter:</label>
+  <input type="text" id="typesetter" name="typesetter"><br><br>
+
+  <label for="rpsCtPlan">RPS - CT Plan:</label>
+  <input type="text" id="rpsCtPlan" name="rpsCtPlan"><br><br>
+
+  <label for="dateStarted">Date Started:</label>
+  <span id="dateStarted"></span><br><br>
+
+  <label for="timeStarted">Time Started:</label>
+  <input type="text" id="timeStarted" name="timeStarted" disabled><br><br>
+
+  <label for="timeEnded">Time Ended:</label>
+  <input type="text" id="timeEnded" name="timeEnded" disabled><br><br>
+
+  <label for="remarks">Remarks:</label>
+  <input type="text" id="remarks" name="remarks"><br><br>
+
+  <button type="button" onclick="startProject()">Start Project</button>
+  <button type="button" onclick="endProjectPrompt()">End Project</button>
+  <button type="button" onclick="extractToExcel()">Extract</button>
+  <p>Status: <span id="status" class="status-not-started">Not Started</span></p>
+</form>
+
+<h2 style="text-align: center; color: orange;">Project Overview</h2>
+<table class="project-overview" id="projectOverview">
+  <tr>
+    <th>Project</th>
+    <th>IAN/EAN/Project name</th>
+    <th>Manual Type</th>
+    <th>Task Type</th>
+    <th>QC</th>
+    <th>Typesetter</th>
+    <th>RPS - CT Plan</th>
+    <th>Date Started</th>
+    <th>Time Started</th>
+    <th>Time Ended</th>
+    <th>Remarks</th>
+    <th>Status</th>
+    <th>Time Spent</th>
+  </tr>
+  <!-- Table content will be added dynamically -->
+</table>
+
+<button onclick="showAllProjects()">SHOW projects</button>
+
+
+<script>
+// Function para sa pag-save sa localStorage
+function saveProjectToLocalStorage(projectDataArray) {
+  localStorage.setItem('projectDataArray', JSON.stringify(projectDataArray));
+}
+
+// Function para sa pag-retrieve ng data mula sa localStorage
+function loadProjectFromLocalStorage() {
+  var jsonData = localStorage.getItem('projectDataArray');
+  return jsonData ? JSON.parse(jsonData) : [];
+}
+
+// Kapag nai-submit ang form ng proyekto
+function addProjectRecord() {
+  var projectDataArray = loadProjectFromLocalStorage();
+  var formData = {
+    project: document.getElementById('project').value,
+    ianEanProject: document.getElementById('ianEanProject').value,
+    manualType: document.getElementById('manualType').value,
+    taskType: document.getElementById('taskType').value,
+    qc: document.getElementById('qc').value,
+    typesetter: document.getElementById('typesetter').value,
+    rpsCtPlan: document.getElementById('rpsCtPlan').value,
+    dateStarted: document.getElementById('dateStarted').textContent,
+    timeStarted: document.getElementById('timeStarted').value,
+    timeEnded: document.getElementById('timeEnded').value,
+    remarks: document.getElementById('remarks').value,
+    status: document.getElementById('status').textContent,
+    timeSpent: calculateTimeSpent(new Date(document.getElementById('dateStarted').textContent + ' ' + document.getElementById('timeStarted').value), new Date(document.getElementById('dateStarted').textContent + ' ' + document.getElementById('timeEnded').value))
+  };
+  projectDataArray.push(formData);
+  saveProjectToLocalStorage(projectDataArray); // Dito mo muna i-save ang bagong data
+  displayProjectData(projectDataArray); // Pagkatapos, ipakita ang data sa project overview
+}
+
+// Kapag nag-load ang page
+window.onload = function() {
+  var projectDataArray = loadProjectFromLocalStorage();
+  if (projectDataArray.length > 0) {
+    displayProjectData(projectDataArray);
+  }
+};
+
+function startProject() {
+  startTime = new Date();
+  document.getElementById('timeStarted').value = startTime.toLocaleTimeString();
+  document.getElementById('dateStarted').textContent = new Date().toLocaleDateString(); // Update date started
+  document.getElementById('status').textContent = 'Ongoing'; // Update status
+  document.getElementById('status').className = 'status-ongoing'; // Update status color
+
+  // Start timer to update time spent every second
+  timerInterval = setInterval(updateTimeSpent, 1000);
+}
+
+function updateTimeSpent() {
+  var currentTime = new Date();
+  var timeDiff = currentTime.getTime() - startTime.getTime(); // in milliseconds
+  var minutes = Math.floor(timeDiff / (1000 * 60)); // Convert milliseconds to minutes
+  var hours = Math.floor(minutes / 60); // Get hours from minutes
+  minutes = minutes % 60; // Get remaining minutes
+
+  // Format the time spent as hours and minutes
+  var formattedTime = hours + ' hours, ' + minutes + ' minutes';
+  
+  // Update the current date
+  document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+
+  // Return the formatted time for any further processing if needed
+  return formattedTime;
+}
+
+function endProjectPrompt() {
+  var confirmation = confirm("Are you sure you want to end the project?");
+  if (confirmation) {
+    var statusOptions = ['APPROVED', 'REJECTED', 'PENDING', 'ON-HOLD'];
+    var dropdownHtml = '<label for="statusDropdown">Select status:</label><select id="statusDropdown">';
+    statusOptions.forEach(function(option) {
+      dropdownHtml += '<option value="' + option + '">' + option + '</option>';
+    });
+    dropdownHtml += '</select>';
+
+    var dialog = document.createElement('div');
+    dialog.innerHTML = dropdownHtml;
+
+    // Style the dialog box
+    dialog.style.position = 'fixed';
+    dialog.style.top = '50%';
+    dialog.style.left = '50%';
+    dialog.style.transform = 'translate(-50%, -50%)';
+    dialog.style.backgroundColor = '#fff';
+    dialog.style.padding = '20px';
+    dialog.style.border = '1px solid #000';
+    dialog.style.zIndex = '9999';
+
+    // Create a button for confirming selection
+    var confirmButton = document.createElement('button');
+    confirmButton.textContent = 'OK';
+    confirmButton.onclick = function() {
+      var status = document.getElementById('statusDropdown').value;
+      var reason = '';
+      if (status === 'PENDING' || status === 'ON-HOLD') {
+        reason = prompt("Reason for putting the project " + status + "?");
+      }
+      if (reason !== null) {
+        endProject(status, reason);
+        document.body.removeChild(dialog);
+      }
+    };
+    dialog.appendChild(confirmButton);
+
+    // Append the dialog to the document body
+    document.body.appendChild(dialog);
+  }
+}
+
+function endProject(status, reason) {
+  // Update time ended
+  var endTime = new Date();
+  document.getElementById('timeEnded').value = endTime.toLocaleTimeString();
+  clearInterval(timerInterval); // Stop the timer interval
+
+  // Collect form data
+  var project = document.getElementById('project').value;
+  var ianEanProject = document.getElementById('ianEanProject').value;
+  var manualType = document.getElementById('manualType').value;
+  var taskType = document.getElementById('taskType').value;
+  var qc = document.getElementById('qc').value;
+  var typesetter = document.getElementById('typesetter').value;
+  var rpsCtPlan = document.getElementById('rpsCtPlan').value;
+  var dateStarted = document.getElementById('dateStarted').textContent;
+  var timeStarted = document.getElementById('timeStarted').value;
+  var timeEnded = document.getElementById('timeEnded').value;
+  var remarks = reason ? reason : document.getElementById('remarks').value; // Use reason if provided, otherwise use remarks input
+  var timeSpent = calculateTimeSpent(startTime, endTime);
+
+  // Update project overview table
+  var table = document.getElementById("projectOverview");
+
+  // Insert new row with project data
+  var newRow = table.insertRow(-1);
+  newRow.insertCell(0).textContent = project;
+  newRow.insertCell(1).textContent = ianEanProject;
+  newRow.insertCell(2).textContent = manualType;
+  newRow.insertCell(3).textContent = taskType;
+  newRow.insertCell(4).textContent = qc;
+  newRow.insertCell(5).textContent = typesetter;
+  newRow.insertCell(6).textContent = rpsCtPlan;
+  newRow.insertCell(7).textContent = dateStarted;
+  newRow.insertCell(8).textContent = timeStarted;
+  newRow.insertCell(9).textContent = timeEnded;
+  newRow.insertCell(10).textContent = remarks;
+  newRow.insertCell(11).textContent = status;
+  newRow.insertCell(12).textContent = timeSpent;
+
+  // Reset the form and status
+  document.getElementById('projectForm').reset(); // Reset the form
+  document.getElementById('status').textContent = 'Not Started'; // Reset status to 'Not Started'
+  document.getElementById('status').className = 'status-not-started'; // Reset status color
+
+  // Save project data to localStorage
+  var projectDataArray = loadProjectFromLocalStorage(); // Retrieve latest data
+  projectDataArray.push({ // Add new data
+    project: project,
+    ianEanProject: ianEanProject,
+    manualType: manualType,
+    taskType: taskType,
+    qc: qc,
+    typesetter: typesetter,
+    rpsCtPlan: rpsCtPlan,
+    dateStarted: dateStarted,
+    timeStarted: timeStarted,
+    timeEnded: timeEnded,
+    remarks: remarks,
+    status: status,
+    timeSpent: timeSpent
+  });
+  saveProjectToLocalStorage(projectDataArray); // Save updated data
+}
+
+function extractToExcel() {
+  var table = document.getElementById('projectOverview');
+  var rows = table.rows;
+  var csvData = [];
+
+  for (var i = 0; i < rows.length; i++) {
+    var rowData = [];
+    var cells = rows[i].cells;
+    for (var j = 0; j < cells.length; j++) {
+      rowData.push(cells[j].textContent);
+    }
+    csvData.push(rowData.join(','));
+  }
+
+  var csvContent = 'data:text/csv;charset=utf-8,';
+  csvData.forEach(function(row) {
+    csvContent += row + '\r\n';
+  });
+
+  var encodedUri = encodeURI(csvContent);
+  var link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', 'project_overview.csv');
+  document.body.appendChild(link);
+  link.click();
+}
+
+function calculateTimeSpent(startTime, endTime) {
+  var start = new Date(startTime);
+  var end = new Date(endTime);
+  var timeDiff = Math.abs(end - start);
+  var hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  var minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+  return hours + " hours, " + minutes + " minutes";
+}
+
+function showAllProjects() {
+  var projectDataArray = loadProjectFromLocalStorage();
+  if (projectDataArray.length > 0) {
+    displayProjectData(projectDataArray);
+  } else {
+    alert("No projects found.");
+  }
+}
+</script>
+</body>
+</html>
